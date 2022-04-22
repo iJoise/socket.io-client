@@ -1,63 +1,54 @@
-import React, { RefObject, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import './App.css';
-import { io, Socket } from 'socket.io-client';
-
-type Messages = {
-  message: string
-  id: string
-  user: {
-    id: string
-    name: string
-  }
-}
+import { useAppSelector } from './hook/useAppSelector';
+import {
+  createConnection,
+  destroyConnection,
+  sendNewMessage,
+  setNewMessage,
+  updateName,
+} from './store/chat-reducer';
+import { useDispatch } from 'react-redux';
 
 function App() {
-  const socketRef = useRef<Socket>();
   const messagesAnchorRef = useRef<HTMLDivElement>(null);
-  const [messages, setMessages] = useState<Messages[]>([]);
   const [autoScrollIsActive, setAutoScrollIsActive] = useState(true);
   const [lastScrollTop, setLastScrollTop] = useState(0);
-  const [newMessage, setNewMessage] = useState({
-    mess: 'hello',
-    name: 'Kirill'
-  });
+  const { messages, newMessage } = useAppSelector(state => state.chat);
+  const dispatch = useDispatch();
 
   useEffect(() => {
-    socketRef.current = io('http://localhost:5000', {
-      transports: ['websocket', 'polling'],
-    });
-
-    socketRef.current?.on('init-messages-published', (messages) => {
-      setMessages(messages)
-    })
-
-    socketRef.current?.on('new-message-sent', message => {
-      setMessages((messages) => [...messages, message])
-    })
-  }, []);
+    dispatch(createConnection());
+    return () => {
+      dispatch(destroyConnection());
+    };
+  }, [dispatch]);
 
   useEffect(() => {
     if (messagesAnchorRef.current && autoScrollIsActive) {
-      messagesAnchorRef.current.scrollIntoView({behavior: 'smooth'})
+      messagesAnchorRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages])
+  }, [messages, autoScrollIsActive]);
 
   return (
     <div className="App">
-      <div className={'chat'} onScroll={e => {
-        const element = e.currentTarget
-        const maxScrollPosition = element.scrollHeight - element.clientHeight;
+      <div
+        className={'chat'}
+        onScroll={e => {
+          const element = e.currentTarget;
+          const maxScrollPosition = element.scrollHeight - element.clientHeight;
 
-        const module = Math.abs(maxScrollPosition - element.scrollTop)
+          const module = Math.abs(maxScrollPosition - element.scrollTop);
 
-        if (element.scrollTop > lastScrollTop && module < 10) {
-          setAutoScrollIsActive(true)
-        } else {
-          setAutoScrollIsActive(false)
-        }
+          if (element.scrollTop > lastScrollTop && module < 10) {
+            setAutoScrollIsActive(true);
+          } else {
+            setAutoScrollIsActive(false);
+          }
 
-        setLastScrollTop(element.scrollTop)
-      }}>
+          setLastScrollTop(element.scrollTop);
+        }}
+      >
         {messages &&
           messages.map(m => (
             <div key={m.id}>
@@ -66,13 +57,13 @@ function App() {
               <hr />
             </div>
           ))}
-        <div ref={messagesAnchorRef}/>
+        <div ref={messagesAnchorRef} />
       </div>
       <span>enter your name</span>
       <input
         type="text"
         value={newMessage.name}
-        onChange={e => setNewMessage({...newMessage, name: e.currentTarget.value})}
+        onChange={e => dispatch(updateName(e.currentTarget.value))}
       />
       <textarea
         name="chat"
@@ -80,14 +71,14 @@ function App() {
         cols={35}
         rows={5}
         disabled={!newMessage.name}
-        value={newMessage.mess}
-        onChange={e => setNewMessage({ ...newMessage, mess: e.currentTarget.value })}
+        value={newMessage.message}
+        onChange={e => dispatch(setNewMessage(e.currentTarget.value))}
       />
       <button
-        disabled={!newMessage.name || !newMessage.mess}
+        disabled={!newMessage.name || !newMessage.message}
         onClick={() => {
-          socketRef.current?.emit('client-message-sent', newMessage);
-          setNewMessage({ ...newMessage, mess: '' });
+          dispatch(sendNewMessage(newMessage));
+          dispatch(setNewMessage(''));
         }}
       >
         Send
