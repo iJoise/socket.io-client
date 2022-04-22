@@ -6,6 +6,7 @@ import {
   destroyConnection,
   sendNewMessage,
   setNewMessage,
+  typeMessage,
   updateName,
 } from './store/chat-reducer';
 import { useDispatch } from 'react-redux';
@@ -14,7 +15,7 @@ function App() {
   const messagesAnchorRef = useRef<HTMLDivElement>(null);
   const [autoScrollIsActive, setAutoScrollIsActive] = useState(true);
   const [lastScrollTop, setLastScrollTop] = useState(0);
-  const { messages, newMessage } = useAppSelector(state => state.chat);
+  const { messages, newMessage, typingUsers } = useAppSelector(state => state.chat);
   const dispatch = useDispatch();
 
   useEffect(() => {
@@ -37,15 +38,12 @@ function App() {
         onScroll={e => {
           const element = e.currentTarget;
           const maxScrollPosition = element.scrollHeight - element.clientHeight;
-
           const module = Math.abs(maxScrollPosition - element.scrollTop);
-
           if (element.scrollTop > lastScrollTop && module < 10) {
             setAutoScrollIsActive(true);
           } else {
             setAutoScrollIsActive(false);
           }
-
           setLastScrollTop(element.scrollTop);
         }}
       >
@@ -58,6 +56,14 @@ function App() {
             </div>
           ))}
         <div ref={messagesAnchorRef} />
+      </div>
+      <div className={'typing'}>
+        {typingUsers &&
+          typingUsers.map(name => (
+            <div key={name}>
+              <b>{name}: </b>...🖌
+            </div>
+          ))}
       </div>
       <span>enter your name</span>
       <input
@@ -72,7 +78,10 @@ function App() {
         rows={5}
         disabled={!newMessage.name}
         value={newMessage.message}
-        onChange={e => dispatch(setNewMessage(e.currentTarget.value))}
+        onChange={e => {
+          dispatch(setNewMessage(e.currentTarget.value));
+          dispatch(typeMessage(newMessage.name));
+        }}
       />
       <button
         disabled={!newMessage.name || !newMessage.message}

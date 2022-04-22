@@ -13,4 +13,10 @@
    height: 300px;
    width: 300px;
    overflow-y: scroll;
+   display: flex;
+   flex-direction: column;
+}
+
+.typing {
+   height: 20px;
 }

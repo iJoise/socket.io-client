@@ -8,6 +8,7 @@ const initialState: State = {
     name: '',
     message: '',
   },
+  typingUsers: [],
 };
 
 export const chatReducer = (state: State = initialState, action: AllActionsType): State => {
@@ -21,6 +22,12 @@ export const chatReducer = (state: State = initialState, action: AllActionsType)
       return {
         ...state,
         messages: [...state.messages, action.message],
+        typingUsers: state.typingUsers.filter(u => u !== action.message.user.name)
+      };
+    case 'typing-user':
+      return {
+        ...state,
+        typingUsers: [...state.typingUsers.filter(name => name !== action.name), action.name],
       };
     case 'update-name':
       return {
@@ -35,9 +42,9 @@ export const chatReducer = (state: State = initialState, action: AllActionsType)
         ...state,
         newMessage: {
           ...state.newMessage,
-          message: action.message
-        }
-      }
+          message: action.message,
+        },
+      };
     default:
       return state;
   }
@@ -48,6 +55,7 @@ const newMessageReceived = (message: Message) =>
   ({ type: 'new-messages-received', message } as const);
 export const updateName = (name: string) => ({ type: 'update-name', name } as const);
 export const setNewMessage = (message: string) => ({ type: 'new-message', message } as const);
+export const typingUserAdded = (name: string) => ({ type: 'typing-user', name } as const);
 
 export const createConnection = (): AppThunkType => dispatch => {
   api.createConnection();
@@ -58,11 +66,21 @@ export const createConnection = (): AppThunkType => dispatch => {
     message => {
       dispatch(newMessageReceived(message));
     },
+    user => {
+      dispatch(typingUserAdded(user))
+    },
   );
 };
-export const sendNewMessage = (message: SendMessage): AppThunkType => dispatch => {
-  api.sendMessage(message);
-}
+
+export const sendNewMessage =
+  (message: SendMessage): AppThunkType =>
+  dispatch => {
+    api.sendMessage(message);
+  };
+
+export const typeMessage = (name: string): AppThunkType => dispatch => {
+  api.typeMessage(name);
+};
 
 export const destroyConnection = (): AppThunkType => dispatch => {
   api.destroyConnection();
@@ -72,5 +90,11 @@ type MessageReceivedType = ReturnType<typeof messageReceived>;
 type NewMessageReceivedType = ReturnType<typeof newMessageReceived>;
 type UpdateName = ReturnType<typeof updateName>;
 type SetNewMessage = ReturnType<typeof setNewMessage>;
+type TypingUserAdded = ReturnType<typeof typingUserAdded>;
 
-export type AllActionsType = MessageReceivedType | NewMessageReceivedType | UpdateName | SetNewMessage;
+export type AllActionsType =
+  | MessageReceivedType
+  | NewMessageReceivedType
+  | UpdateName
+  | SetNewMessage
+  | TypingUserAdded;

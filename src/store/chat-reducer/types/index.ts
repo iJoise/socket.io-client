@@ -12,6 +12,7 @@ export interface Message {
 export interface State {
   messages: Message[];
   newMessage: SendMessage
+  typingUsers: string[]
 }
 
 export interface SendMessage {
