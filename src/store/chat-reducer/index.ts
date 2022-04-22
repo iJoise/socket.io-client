@@ -22,7 +22,7 @@ export const chatReducer = (state: State = initialState, action: AllActionsType)
       return {
         ...state,
         messages: [...state.messages, action.message],
-        typingUsers: state.typingUsers.filter(u => u !== action.message.user.name)
+        typingUsers: state.typingUsers.filter(u => u !== action.message.user.name),
       };
     case 'typing-user':
       return {
@@ -67,22 +67,24 @@ export const createConnection = (): AppThunkType => dispatch => {
       dispatch(newMessageReceived(message));
     },
     user => {
-      dispatch(typingUserAdded(user))
+      dispatch(typingUserAdded(user));
     },
   );
 };
 
 export const sendNewMessage =
   (message: SendMessage): AppThunkType =>
-  dispatch => {
+  () => {
     api.sendMessage(message);
   };
 
-export const typeMessage = (name: string): AppThunkType => dispatch => {
-  api.typeMessage(name);
-};
+export const typeMessage =
+  (name: string): AppThunkType =>
+  () => {
+    api.typeMessage(name);
+  };
 
-export const destroyConnection = (): AppThunkType => dispatch => {
+export const destroyConnection = (): AppThunkType => () => {
   api.destroyConnection();
 };
 
